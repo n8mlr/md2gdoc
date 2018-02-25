@@ -45,7 +45,7 @@ function test_transformHeadings() {
 }
 
 function test_bold() {
-var doc = DocumentApp.create('Mock');
+    var doc = DocumentApp.create('Mock');
     var body = doc.getBody();
     var p = '\
         * **Layer** - a rasterized \
@@ -80,7 +80,6 @@ function convert(body) {
         p = paragraphs[i]
         text = p.getText();
 
-
         try {
             p = transformHeading(p);
             p = transformBold(p);
@@ -88,7 +87,7 @@ function convert(body) {
             Logger.log("Couldn't transform: %s", text);
             Logger.log(e.message);
         }
-        
+
     }
     return body;
 }
@@ -102,7 +101,7 @@ function convert(body) {
  */
 function transformHeading(p) {
     var t = p.getText()
-            PATTERN_HEADER = /^#+.*/;
+    PATTERN_HEADER = /^#+.*/;
 
     if (!PATTERN_HEADER.test(t)) {
         return p;
@@ -125,44 +124,81 @@ function transformHeading(p) {
     return p;
 }
 
+function log(args) {
+    var type = typeof(args);
+    if (type === Array) {
+        Logger.log("%s", args.join());
+    } else {
+        Logger.log(args);
+    }
+}
 
 /**
  * Transforms bold setText
  *
  * @param {paragraph}
  */
- function transformBold(p) {
-    var t = p.editAsText(),
-        PATTERN_BOLD = /\*{2}[\w\s]*\*{2}/g,
-        offset = 0,
-        tmp = t;
+function transformBold(p) {
+    var PATTERN_BOLD = /\*{2}[\w\s]*\*{2}/,
+        matches = getMatchBoundaries(p.getText(), PATTERN_BOLD),
+        match;
 
-
-
-    // while i is less than length of string
-    // set tmp equal to a substring of t starting at pos i until the end of string
-    // if tmp contains match
-    // set bold text
-    // starting at character of start of pattern
-    // endind at the character number i
-    // set i equal to last character of match
-    // continue
-    // else, set i equal to length of string
-
-    var match;
-
-    while (offset < t.length) {
-        //tmp = t.substr(offset, t.length - offset);
-        match = p.findText("\*{2}[\w\s]*\*{2}", offset);
-        if (match) {
-            // set bold texg
-            t.setBold(match.getStartOffset(), match.endOffsetInclusive());
-            Logger.log("Offset start %s, %end %s", match.getStartOffset(), match.endOffsetInclusive());
-        } else {
-            Logger.log("No match in %s", tmp);
-        }
-
-        offset += tmp.length;
+    for (var i=0; i < matches.length; i++) {
+        match = matches[i];
+        p.editAsText().setBold(matches[i][0], matches[i][1], true);
     }
+    return p;
+}
 
- }
+/**
+ * Returns an array of matches alternating start and end positions in string 
+ */
+function getMatchBoundaries(str, pattern) {
+    var offset = 0,
+        tmp = str,
+        range,
+        results = [],
+        absStart,
+        absEnd;
+
+    while (offset < str.length) {
+        tmp = str.substring(offset);
+        match = getBoundaryRange(tmp, pattern);
+
+        if (match) {
+            absStart = offset + match.start;
+            absEnd = absStart + match.text.length;
+            results.push([absStart, absEnd]);
+            offset = absEnd;
+            continue;
+        }
+        offset = str.length;
+    }
+    return results;
+}
+
+
+/**
+ * Returns two offest values of the first occurence of pattern in str
+ *
+ * @param {string} Text to be searched
+ * @param {Regex}
+ * @return null or {Array}
+ */
+function getBoundaryRange(str, pattern) {
+    var startPos = str.search(pattern),
+        match,
+        endPos;
+
+    if (startPos > -1) {
+        match = str.match(pattern);
+        endPos = startPos + match[0].length;
+
+        return {
+            text: match[0],
+            start: startPos,
+            end: endPos
+        };
+    }
+    return;
+}
