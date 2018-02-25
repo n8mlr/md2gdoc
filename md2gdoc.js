@@ -141,12 +141,15 @@ function log(args) {
 function transformBold(p) {
     var PATTERN_BOLD = /\*{2}[\w\s]*\*{2}/,
         matches = getMatchBoundaries(p.getText(), PATTERN_BOLD),
-        match;
+        match,
+        text;
 
     for (var i=0; i < matches.length; i++) {
         match = matches[i];
         p.editAsText().setBold(matches[i][0], matches[i][1], true);
     }
+
+    p.editAsText().replaceText("[*]{2}", "");
     return p;
 }
 
