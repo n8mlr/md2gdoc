@@ -68,7 +68,6 @@ function printBody(body) {
  * appropriate GoogleDoc formats
  *
  * @param {Body} https://developers.google.com/apps-script/reference/document/body
-
  */
 function convert(body) {
     var paragraphs = body.getParagraphs(),
@@ -134,7 +133,7 @@ function log(args) {
 }
 
 /**
- * Transforms bold setText
+ * Transform bold text tags
  *
  * @param {paragraph}
  */
@@ -149,7 +148,10 @@ function transformBold(p) {
         p.editAsText().setBold(matches[i][0], matches[i][1], true);
     }
 
-    p.editAsText().replaceText("[*]{2}", "");
+    // remove the unneeded markdown markup
+    if (match) {
+        p.editAsText().replaceText("[*]{2}", "");
+    }
     return p;
 }
 
