@@ -1,3 +1,137 @@
+function Node(data) {
+    this.data = data;
+    this.children = [];
+}
+
+function Tree() {
+    this.root = null;
+}
+
+Tree.prototype.add = function(data, toNodeData) {
+    var node = new Node(data);
+    var parent = toNodeData ? this.findBFS(toNodeData) : null;
+    if (parent) {
+        parent.children.push(node);
+    } else {
+        if (!this.root) {
+            this.root = node;
+        } else {
+            return 'Root node is already assigned';
+        }
+    }
+};
+Tree.prototype.remove = function(data) {
+    if (this.root.data === data) {
+        this.root = null;
+    }
+
+    var queue = [this.root];
+    while (queue.length) {
+        var node = queue.shift();
+        for (var i = 0; i < node.children.length; i++) {
+            if (node.children[i].data === data) {
+                node.children.splice(i, 1);
+            } else {
+                queue.push(node.children[i]);
+            }
+        }
+    }
+};
+Tree.prototype.contains = function(data) {
+    return this.findBFS(data) ? true : false;
+};
+Tree.prototype.findBFS = function(data) {
+    var queue = [this.root];
+    while (queue.length) {
+        var node = queue.shift();
+        if (node.data === data) {
+            return node;
+        }
+        for (var i = 0; i < node.children.length; i++) {
+            queue.push(node.children[i]);
+        }
+    }
+    return null;
+};
+Tree.prototype._preOrder = function(node, fn) {
+    if (node) {
+        if (fn) {
+            fn(node);
+        }
+        for (var i = 0; i < node.children.length; i++) {
+            this._preOrder(node.children[i], fn);
+        }
+    }
+};
+Tree.prototype._postOrder = function(node, fn) {
+    if (node) {
+        for (var i = 0; i < node.children.length; i++) {
+            this._postOrder(node.children[i], fn);
+        }
+        if (fn) {
+            fn(node);
+        }
+    }
+};
+Tree.prototype.traverseDFS = function(fn, method) {
+    var current = this.root;
+    if (method) {
+        this['_' + method](current, fn);
+    } else {
+        this._preOrder(current, fn);
+    }
+};
+Tree.prototype.traverseBFS = function(fn) {
+    var queue = [this.root];
+    while (queue.length) {
+        var node = queue.shift();
+        if (fn) {
+            fn(node);
+        }
+        for (var i = 0; i < node.children.length; i++) {
+            queue.push(node.children[i]);
+        }
+    }
+};
+Tree.prototype.print = function() {
+    if (!this.root) {
+        return console.log('No root node found');
+    }
+    var newline = new Node('|');
+    var queue = [this.root, newline];
+    var string = '';
+    while (queue.length) {
+        var node = queue.shift();
+        string += node.data.toString() + ' ';
+        if (node === newline && queue.length) {
+            queue.push(newline);
+        }
+        for (var i = 0; i < node.children.length; i++) {
+            queue.push(node.children[i]);
+        }
+    }
+    console.log(string.slice(0, -2).trim());
+};
+Tree.prototype.printByLevel = function() {
+    if (!this.root) {
+        return console.log('No root node found');
+    }
+    var newline = new Node('\n');
+    var queue = [this.root, newline];
+    var string = '';
+    while (queue.length) {
+        var node = queue.shift();
+        string += node.data.toString() + (node.data !== '\n' ? ' ' : '');
+        if (node === newline && queue.length) {
+            queue.push(newline);
+        }
+        for (var i = 0; i < node.children.length; i++) {
+            queue.push(node.children[i]);
+        }
+    }
+    console.log(string.trim());
+};
+
 /**
  * Creates a menu entry in the Google Docs UI when the document is opened.
  * This method is only used by the regular add-on, and is never called by
@@ -33,6 +167,19 @@ function main() {
     convert(doc.getBody());
 }
 
+function test_transformLists() {
+    var doc = DocumentApp.create('Mock');
+    var body = doc.getBody();
+    body.appendParagraph('\
+        * Item 1 \
+        * Item 2  \
+        * Item 3 \
+          * Subitem 1 \
+          * Subitem 2 \
+    ');
+    structure(doc.getBody());
+}
+
 
 function test_transformHeadings() {
     var doc = DocumentApp.create('Mock');
@@ -52,6 +199,7 @@ function test_bold() {
         * **Layer Preview** - a visual  \
         * **PageViewer** - a component that allows **customers** \
     ';
+
     body.appendParagraph(p);
     convert(body);
 }
@@ -61,6 +209,21 @@ function printBody(body) {
     for (var i in paragraphs) {
         Logger.log(paragraphs[i].getText());
     }
+}
+
+// Creates
+function structure(body) {
+    var paragraphs = body.getParagraphs(),
+        newBody;
+        p;
+
+    
+    for (var i in paragraphs) {
+        p = paragraphs[i];
+        log(p.getText());
+    }
+
+    return body;
 }
 
 /**
@@ -80,6 +243,7 @@ function convert(body) {
         text = p.getText();
 
         try {
+            //p = transformLists(p);
             p = transformHeading(p);
             p = transformBold(p);
         } catch (e) {
@@ -123,6 +287,23 @@ function transformHeading(p) {
     return p;
 }
 
+/**
+ * Transforms lists into google doc structures
+ *
+ * @param {paragraph}
+ * @return {paragraph}
+ */
+function transformLists(p) {
+    // build a doc tree
+
+    // create an array
+    // for each paragraph
+    // add a
+
+    // convert unordered 
+    return p;
+}
+
 function log(args) {
     var type = typeof(args);
     if (type === Array) {
@@ -143,7 +324,7 @@ function transformBold(p) {
         match,
         text;
 
-    for (var i=0; i < matches.length; i++) {
+    for (var i = 0; i < matches.length; i++) {
         match = matches[i];
         p.editAsText().setBold(matches[i][0], matches[i][1], true);
     }
